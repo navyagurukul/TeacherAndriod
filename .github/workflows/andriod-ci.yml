@@ -23,6 +23,7 @@ jobs:
     env:
       APP_PACKAGE: com.OritSciencesPrivateLimited.EnglishGurukul.teacher
       APP_ACTIVITY: com.OritSciencesPrivateLimited.EnglishGurukul.MainActivity
+      APPIUM_PORT: 4725
 
     steps:
       - name: Checkout Repository
@@ -60,14 +61,21 @@ jobs:
           adb devices
 
       # ================= START APPIUM =================
+      - name: Kill Existing Appium
+        shell: cmd
+        run: |
+          taskkill /F /IM node.exe || exit /B 0
+
       - name: Start Appium Server
         shell: cmd
         run: |
-          start /B appium
+          start /B appium -p %APPIUM_PORT%
           timeout /t 15
 
       # ================= RUN TESTS =================
       - name: Run Smoke Tests
+        env:
+          APPIUM_URL: http://127.0.0.1:4725
         run: |
           pytest -m smoke -v -s --alluredir=allure-results
 
@@ -95,6 +103,7 @@ jobs:
     env:
       APP_PACKAGE: com.OritSciencesPrivateLimited.EnglishGurukul.teacher
       APP_ACTIVITY: com.OritSciencesPrivateLimited.EnglishGurukul.MainActivity
+      APPIUM_PORT: 4725
 
     steps:
       - name: Checkout Repository
@@ -132,14 +141,21 @@ jobs:
           adb devices
 
       # ================= START APPIUM =================
+      - name: Kill Existing Appium
+        shell: cmd
+        run: |
+          taskkill /F /IM node.exe || exit /B 0
+
       - name: Start Appium Server
         shell: cmd
         run: |
-          start /B appium
+          start /B appium -p %APPIUM_PORT%
           timeout /t 15
 
       # ================= RUN TESTS =================
       - name: Run Regression Tests
+        env:
+          APPIUM_URL: http://127.0.0.1:4725
         run: |
           pytest -m regression -v -s --alluredir=allure-results
 
