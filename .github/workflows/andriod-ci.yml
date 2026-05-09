@@ -2,23 +2,57 @@ name: Teacher Android Automation CI
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches:
+      - main
+      - dev
+
   pull_request:
-    branches: ["dev"]
+    branches:
+      - dev
+
   schedule:
-    - cron: "0 2 * * *"   # nightly regression run
+    - cron: "0 2 * * *"   # Nightly regression run
+
+  workflow_dispatch:
 
 jobs:
-  android-tests:
-    name: Android Appium Tests
+
+  # ================= CLOUD CHECKS =================
+  cloud-checks:
+    name: Cloud Validation Checks
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate Tests
+        run: |
+          pytest --collect-only
+
+
+  # ================= SMOKE TESTS =================
+  smoke-tests:
+    name: Smoke Tests
+    if: github.event_name == 'pull_request'
+    runs-on: [self-hosted, Windows]
 
     env:
       APP_PACKAGE: com.OritSciencesPrivateLimited.EnglishGurukul.teacher
       APP_ACTIVITY: com.OritSciencesPrivateLimited.EnglishGurukul.MainActivity
 
     steps:
-      - name: Checkout repo
+      - name: Checkout Repo
         uses: actions/checkout@v4
 
       # ================= PYTHON =================
@@ -27,7 +61,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Python dependencies
+      - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -44,93 +78,104 @@ jobs:
           appium -v
 
       # ================= JAVA =================
-      - name: Setup JDK
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "17"
 
       # ================= START APPIUM =================
-      - name: Start Appium server
+      - name: Start Appium Server
+        shell: cmd
         run: |
-          appium --log-level info &
-          sleep 15
-          
-  # ================= SMOKE =================
-  smoke-tests:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+          start /B appium
+          timeout /t 15
 
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-
-      - name: Install Node + Appium
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-
-      - run: npm install -g appium
-
-      - name: Start Appium
-        run: appium & sleep 15
-
+      # ================= RUN TESTS =================
       - name: Run Smoke Tests
-        run: pytest -m smoke --alluredir=allure-results
+        run: |
+          pytest -m smoke -v -s --alluredir=allure-results
 
-      - name: Upload Report
+      # ================= REPORTS =================
+      - name: Upload Smoke Report
         uses: actions/upload-artifact@v4
         with:
           name: smoke-report
           path: allure-results
 
+      - name: Upload Failure Screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-failure-screenshots
+          path: screenshots/
 
-  # ================= REGRESSION =================
+
+  # ================= REGRESSION TESTS =================
   regression-tests:
+    name: Regression Tests
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Windows]
+
+    env:
+      APP_PACKAGE: com.OritSciencesPrivateLimited.EnglishGurukul.teacher
+      APP_ACTIVITY: com.OritSciencesPrivateLimited.EnglishGurukul.MainActivity
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
 
+      # ================= PYTHON =================
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Setup Node + Appium
+      # ================= NODE + APPIUM =================
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
 
-      - run: npm install -g appium
+      - name: Install Appium
+        run: |
+          npm install -g appium
+          appium -v
 
-      - name: Start Appium
-        run: appium & sleep 15
+      # ================= JAVA =================
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
+      # ================= START APPIUM =================
+      - name: Start Appium Server
+        shell: cmd
+        run: |
+          start /B appium
+          timeout /t 15
+
+      # ================= RUN TESTS =================
       - name: Run Regression Tests
-        run: pytest -m regression --alluredir=allure-results
+        run: |
+          pytest -m regression -v -s --alluredir=allure-results
 
-      - name: Upload Report
+      # ================= REPORTS =================
+      - name: Upload Regression Report
         uses: actions/upload-artifact@v4
         with:
           name: regression-report
           path: allure-results
 
-      - name: Upload failure screenshots
+      - name: Upload Failure Screenshots
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: failure-screenshots
+          name: regression-failure-screenshots
           path: screenshots/
