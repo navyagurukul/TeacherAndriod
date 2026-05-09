@@ -197,10 +197,21 @@ jobs:
           npm install -g appium
           appium -v
 
-      - name: Install UiAutomator2 Driver
+      - name: Install or Update UiAutomator2 Driver
         shell: powershell
         run: |
-          appium driver install uiautomator2
+          appium driver list --installed
+
+          $driverExists = appium driver list --installed | Select-String "uiautomator2"
+
+          if ($driverExists) {
+            Write-Host "UiAutomator2 already installed. Updating..."
+            appium driver update uiautomator2
+          }
+          else {
+            Write-Host "Installing UiAutomator2..."
+            appium driver install uiautomator2
+          }
 
       # ================= JAVA =================
       - name: Verify Java
