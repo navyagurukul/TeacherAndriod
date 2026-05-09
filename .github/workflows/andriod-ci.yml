@@ -58,14 +58,29 @@ jobs:
           node -v
           npm -v
 
-      # ================= APPIUM =================
-      - name: Install Appium
+      # ================= APPIUM FIX =================
+      - name: Remove Old Appium
         shell: powershell
         run: |
-          npm install -g appium
+          npm uninstall -g appium
+
+      - name: Install Stable Appium
+        shell: powershell
+        run: |
+          npm install -g appium@2.11.3
           appium -v
 
-      - name: Verify UiAutomator2 Driver
+      - name: Remove Old UiAutomator2 Driver
+        shell: powershell
+        run: |
+          appium driver uninstall uiautomator2
+
+      - name: Install Compatible UiAutomator2 Driver
+        shell: powershell
+        run: |
+          appium driver install uiautomator2@2.45.1
+
+      - name: Verify Installed Drivers
         shell: powershell
         run: |
           appium driver list --installed
@@ -76,14 +91,14 @@ jobs:
         run: |
           java -version
 
-      # ================= ANDROID DEVICE =================
+      # ================= DEVICE =================
       - name: Verify Android Device
         shell: powershell
         run: |
           adb devices
 
       # ================= KILL OLD APPIUM =================
-      - name: Kill Existing Appium Server
+      - name: Kill Existing Appium
         shell: powershell
         run: |
           $connections = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue
@@ -93,27 +108,25 @@ jobs:
 
             foreach ($processId in $pids) {
               Stop-Process -Id $processId -Force
-              Write-Host "Killed process using port 4723"
             }
-          }
-          else {
-            Write-Host "No Appium process running"
           }
 
       # ================= START APPIUM =================
       - name: Start Appium Server
         shell: powershell
         run: |
-          Start-Process cmd.exe -ArgumentList '/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1'
-          Start-Sleep -Seconds 25
+          Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
+          Start-Sleep -Seconds 20
 
       # ================= VERIFY APPIUM =================
       - name: Verify Appium Server
         shell: powershell
         run: |
+          netstat -ano | findstr 4723
+
           try {
             $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
-            Write-Host "Appium Server is Running"
+            Write-Host "Appium Server Running"
             $response
           }
           catch {
@@ -199,14 +212,29 @@ jobs:
           node -v
           npm -v
 
-      # ================= APPIUM =================
-      - name: Install Appium
+      # ================= APPIUM FIX =================
+      - name: Remove Old Appium
         shell: powershell
         run: |
-          npm install -g appium
+          npm uninstall -g appium
+
+      - name: Install Stable Appium
+        shell: powershell
+        run: |
+          npm install -g appium@2.11.3
           appium -v
 
-      - name: Verify UiAutomator2 Driver
+      - name: Remove Old UiAutomator2 Driver
+        shell: powershell
+        run: |
+          appium driver uninstall uiautomator2
+
+      - name: Install Compatible UiAutomator2 Driver
+        shell: powershell
+        run: |
+          appium driver install uiautomator2@2.45.1
+
+      - name: Verify Installed Drivers
         shell: powershell
         run: |
           appium driver list --installed
@@ -217,14 +245,14 @@ jobs:
         run: |
           java -version
 
-      # ================= ANDROID DEVICE =================
+      # ================= DEVICE =================
       - name: Verify Android Device
         shell: powershell
         run: |
           adb devices
 
       # ================= KILL OLD APPIUM =================
-      - name: Kill Existing Appium Server
+      - name: Kill Existing Appium
         shell: powershell
         run: |
           $connections = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue
@@ -234,27 +262,25 @@ jobs:
 
             foreach ($processId in $pids) {
               Stop-Process -Id $processId -Force
-              Write-Host "Killed process using port 4723"
             }
-          }
-          else {
-            Write-Host "No Appium process running"
           }
 
       # ================= START APPIUM =================
       - name: Start Appium Server
         shell: powershell
         run: |
-          Start-Process cmd.exe -ArgumentList '/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1'
-          Start-Sleep -Seconds 25
+          Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
+          Start-Sleep -Seconds 20
 
       # ================= VERIFY APPIUM =================
       - name: Verify Appium Server
         shell: powershell
         run: |
+          netstat -ano | findstr 4723
+
           try {
             $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
-            Write-Host "Appium Server is Running"
+            Write-Host "Appium Server Running"
             $response
           }
           catch {
