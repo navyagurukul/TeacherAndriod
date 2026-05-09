@@ -104,14 +104,23 @@ jobs:
       - name: Start Appium Server
         shell: powershell
         run: |
-          Start-Process powershell -ArgumentList "appium --address 127.0.0.1 --port 4723"
-          Start-Sleep -Seconds 15
+          Start-Process cmd.exe -ArgumentList '/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1'
+          Start-Sleep -Seconds 25
 
       # ================= VERIFY APPIUM =================
+      
       - name: Verify Appium Server
         shell: powershell
         run: |
-          Invoke-WebRequest http://127.0.0.1:4723/status
+          try {
+            $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status" -Method Get
+            Write-Host "Appium Server Started Successfully"
+            Write-Host $response
+          }
+          catch {
+            Write-Host "Appium Server NOT Running"
+            exit 1
+          }
 
       # ================= RUN TESTS =================
       - name: Run Smoke Tests
