@@ -1,47 +1,20 @@
 name: Teacher Android Automation CI
 
 on:
-  push:
-    branches:
-      - main
-      - dev
-
   pull_request:
-    branches:
-      - dev
+    branches: ["dev"]     # PR -> Smoke Tests
+
+  push:
+    branches: ["main"]    # Main -> Regression Tests
 
   schedule:
-    - cron: "0 2 * * *"   # Nightly regression run
+    - cron: "0 2 * * *"   # Nightly Regression Run
 
   workflow_dispatch:
 
 jobs:
 
-  # ================= CLOUD CHECKS =================
-  cloud-checks:
-    name: Cloud Validation Checks
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Validate Tests
-        run: |
-          pytest --collect-only
-
-
-  # ================= SMOKE TESTS =================
+  # ===================== SMOKE TEST JOB =====================
   smoke-tests:
     name: Smoke Tests
     if: github.event_name == 'pull_request'
@@ -52,7 +25,7 @@ jobs:
       APP_ACTIVITY: com.OritSciencesPrivateLimited.EnglishGurukul.MainActivity
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       # ================= PYTHON =================
@@ -61,7 +34,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Python Dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -84,6 +57,11 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
+      # ================= VERIFY DEVICE =================
+      - name: Verify Connected Device
+        run: |
+          adb devices
+
       # ================= START APPIUM =================
       - name: Start Appium Server
         shell: cmd
@@ -91,18 +69,28 @@ jobs:
           start /B appium
           timeout /t 15
 
-      # ================= RUN TESTS =================
+      # ================= RUN SMOKE TESTS =================
       - name: Run Smoke Tests
         run: |
           pytest -m smoke -v -s --alluredir=allure-results
 
-      # ================= REPORTS =================
-      - name: Upload Smoke Report
+      # ================= ALLURE REPORT =================
+      - name: Install Allure CLI
+        run: |
+          npm install -g allure-commandline --save-dev
+          allure --version
+
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results --clean -o allure-report
+
+      - name: Upload Allure Report
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-report
-          path: allure-results
+          name: smoke-allure-report
+          path: allure-report
 
+      # ================= SCREENSHOTS =================
       - name: Upload Failure Screenshots
         if: failure()
         uses: actions/upload-artifact@v4
@@ -111,7 +99,7 @@ jobs:
           path: screenshots/
 
 
-  # ================= REGRESSION TESTS =================
+  # ===================== REGRESSION TEST JOB =====================
   regression-tests:
     name: Regression Tests
     if: github.event_name != 'pull_request'
@@ -122,7 +110,7 @@ jobs:
       APP_ACTIVITY: com.OritSciencesPrivateLimited.EnglishGurukul.MainActivity
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       # ================= PYTHON =================
@@ -131,7 +119,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Python Dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -154,6 +142,11 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
+      # ================= VERIFY DEVICE =================
+      - name: Verify Connected Device
+        run: |
+          adb devices
+
       # ================= START APPIUM =================
       - name: Start Appium Server
         shell: cmd
@@ -161,18 +154,28 @@ jobs:
           start /B appium
           timeout /t 15
 
-      # ================= RUN TESTS =================
+      # ================= RUN REGRESSION TESTS =================
       - name: Run Regression Tests
         run: |
           pytest -m regression -v -s --alluredir=allure-results
 
-      # ================= REPORTS =================
-      - name: Upload Regression Report
+      # ================= ALLURE REPORT =================
+      - name: Install Allure CLI
+        run: |
+          npm install -g allure-commandline --save-dev
+          allure --version
+
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results --clean -o allure-report
+
+      - name: Upload Allure Report
         uses: actions/upload-artifact@v4
         with:
-          name: regression-report
-          path: allure-results
+          name: regression-allure-report
+          path: allure-report
 
+      # ================= SCREENSHOTS =================
       - name: Upload Failure Screenshots
         if: failure()
         uses: actions/upload-artifact@v4
