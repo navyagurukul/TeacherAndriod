@@ -1,0 +1,18 @@
+appium:
+  server_url: "http://127.0.0.1:4723"
+
+device:
+  platformName: "Android"
+  deviceName: "Android Device"
+  automationName: "UiAutomator2"
+  udid: "7245d3d80508"
+  noReset: true
+  newCommandTimeout: 300
+
+app:
+  appPackage: "com.OritSciencesPrivateLimited.EnglishGurukul.teacher"
+  appActivity: "com.OritSciencesPrivateLimited.EnglishGurukul.MainActivity"
+
+testdata:
+  school: "Sanskruthi School - Nalgonda"
+  phone: "8247282479"
