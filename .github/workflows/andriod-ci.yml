@@ -1,4 +1,4 @@
-name: Teacher Android Automation CI
+name: Gujarat Teacher Android Automation CI
 
 on:
   pull_request:
