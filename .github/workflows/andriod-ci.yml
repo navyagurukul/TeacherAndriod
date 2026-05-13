@@ -135,6 +135,12 @@ jobs:
             exit 1
           }
 
+      - name: Restart ADB
+        run: |
+          adb kill-server
+          adb start-server
+          adb devices
+
       # ================= RUN TESTS =================
       - name: Run Smoke Tests
         shell: powershell
@@ -287,6 +293,12 @@ jobs:
             Get-Content appium.log
             exit 1
           }
+
+      - name: Restart ADB
+        run: |
+          adb kill-server
+          adb start-server
+          adb devices
 
       # ================= RUN TESTS =================
       - name: Run Regression Tests

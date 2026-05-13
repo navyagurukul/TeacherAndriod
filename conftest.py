@@ -2,7 +2,7 @@ import pytest
 import requests
 import os
 import subprocess
-
+import time
 from appium import webdriver
 from appium.options.android import UiAutomator2Options
 from utils.config_reader import load_config
@@ -54,21 +54,21 @@ def driver(config):
     options.auto_grant_permissions = True
 
     options.new_command_timeout = 300
+
     options.adb_exec_timeout = 120000
-    options.uiautomator2_server_install_timeout = 120000
     options.uiautomator2_server_launch_timeout = 120000
+    options.uiautomator2_server_install_timeout = 120000
 
     options.app_package = config["app"]["appPackage"]
     options.app_activity = config["app"]["appActivity"]
     options.app_wait_activity = "*"
 
-    subprocess.run("adb kill-server", shell=True)
-    subprocess.run("adb start-server", shell=True)
-
     driver = webdriver.Remote(
         config["appium"]["server_url"],
         options=options
     )
+
+    time.sleep(5)
 
     yield driver
 
@@ -76,7 +76,6 @@ def driver(config):
         driver.quit()
     except:
         pass
-
 
 # =========================================================
 # GLOBAL TEST RESULTS
