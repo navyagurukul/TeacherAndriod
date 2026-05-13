@@ -53,9 +53,17 @@ def driver(config):
     options.full_reset = False
     options.auto_grant_permissions = True
 
+    options.new_command_timeout = 300
+    options.adb_exec_timeout = 120000
+    options.uiautomator2_server_install_timeout = 120000
+    options.uiautomator2_server_launch_timeout = 120000
+
     options.app_package = config["app"]["appPackage"]
     options.app_activity = config["app"]["appActivity"]
     options.app_wait_activity = "*"
+
+    subprocess.run("adb kill-server", shell=True)
+    subprocess.run("adb start-server", shell=True)
 
     driver = webdriver.Remote(
         config["appium"]["server_url"],
@@ -64,7 +72,10 @@ def driver(config):
 
     yield driver
 
-    driver.quit()
+    try:
+        driver.quit()
+    except:
+        pass
 
 
 # =========================================================
@@ -103,11 +114,18 @@ def pytest_runtest_makereport(item, call):
 
             file_name = item.name + ".png"
 
-            driver.save_screenshot(
-                f"screenshots/{file_name}"
-            )
+            try:
 
-            print(f"📸 Screenshot saved: {file_name}")
+                driver.save_screenshot(
+                    f"screenshots/{file_name}"
+                )
+
+                print(f"📸 Screenshot saved: {file_name}")
+
+            except Exception as e:
+
+                print("❌ Screenshot capture failed")
+                print(str(e))
 
 # =========================================================
 # FINAL SLACK SUMMARY
