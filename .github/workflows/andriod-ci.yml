@@ -166,7 +166,29 @@ jobs:
         with:
           name: smoke-failure-screenshots
           path: screenshots/
+      # ================= SLACK =================
+      - name: Slack Notification
+        if: always()
+        shell: powershell
+        run: |
+          $status = "${{ job.status }}"
 
+          if ($status -eq "success") {
+            $message = "✅ Smoke Tests Passed - Teacher Android Automation"
+          }
+          else {
+            $message = "❌ Smoke Tests Failed - Teacher Android Automation"
+          }
+
+          $body = @{
+            text = $message
+          } | ConvertTo-Json
+
+          Invoke-RestMethod `
+            -Uri "${{ secrets.SLACK_WEBHOOK_URL }}" `
+            -Method Post `
+            -Body $body `
+            -ContentType 'application/json'
 
   # =========================================================
   # REGRESSION TESTS
@@ -320,3 +342,27 @@ jobs:
         with:
           name: regression-failure-screenshots
           path: screenshots/
+
+           # ================= SLACK =================
+      - name: Slack Notification
+        if: always()
+        shell: powershell
+        run: |
+          $status = "${{ job.status }}"
+
+          if ($status -eq "success") {
+            $message = "✅ Regression Tests Passed - Teacher Android Automation"
+          }
+          else {
+            $message = "❌ Regression Tests Failed - Teacher Android Automation"
+          }
+
+          $body = @{
+            text = $message
+          } | ConvertTo-Json
+
+          Invoke-RestMethod `
+            -Uri "${{ secrets.SLACK_WEBHOOK_URL }}" `
+            -Method Post `
+            -Body $body `
+            -ContentType 'application/json'     
