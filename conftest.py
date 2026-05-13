@@ -1,46 +1,50 @@
 import pytest
+import requests
 import os
-import yaml
-from appium import webdriver
-from appium.options.android import UiAutomator2Options
-from utils.config_reader import load_config
 
-# ================= CONFIG =================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
+# ----------------------------
+# GLOBAL STORAGE (in-memory)
+# ----------------------------
+results = []
 
-@pytest.fixture
-def config():
-    return load_config()
 
-# ================= DRIVER =================
-@pytest.fixture(scope="function")
-def driver(config):
+# ----------------------------
+# CAPTURE EACH TEST RESULT
+# ----------------------------
+def pytest_runtest_logreport(report):
+    if report.when == "call":
+        results.append({
+            "name": report.nodeid,
+            "outcome": report.outcome
+        })
 
-    import subprocess
-    subprocess.run(
-        "adb shell am force-stop com.OritSciencesPrivateLimited.EnglishGurukul.teacher",
-        shell=True
-    )
 
-    options = UiAutomator2Options()
+# ----------------------------
+# FINAL SUMMARY AFTER ALL TESTS
+# ----------------------------
+def pytest_sessionfinish(session, exitstatus):
 
-    options.platform_name = config["device"]["platformName"]
-    options.device_name = config["device"]["deviceName"]
-    options.automation_name = config["device"]["automationName"]
+    total = len(results)
+    passed = len([r for r in results if r["outcome"] == "passed"])
+    failed = [r["name"] for r in results if r["outcome"] == "failed"]
 
-    options.no_reset = False
-    options.full_reset = False
-    options.auto_grant_permissions = True
+    title = os.getenv("TITLE", "Automation Tests")
+    webhook = os.getenv("SLACK_WEBHOOK_URL")
 
-    options.app_package = config["app"]["appPackage"]
-    options.app_activity = config["app"]["appActivity"]
-    options.app_wait_activity = "*"
+    message = {
+        "text": f"*{title} - Teacher Android Automation*",
+        "attachments": [
+            {
+                "color": "#36a64f" if len(failed) == 0 else "#ff0000",
+                "fields": [
+                    {"title": "Total Tests", "value": str(total), "short": True},
+                    {"title": "Passed", "value": str(passed), "short": True},
+                    {"title": "Failed", "value": str(len(failed)), "short": True},
+                    {"title": "Failed Tests", "value": "\n".join(failed) if failed else "None", "short": False},
+                ],
+            }
+        ],
+    }
 
-    driver = webdriver.Remote(
-        config["appium"]["server_url"],
-        options=options
-    )
-
-    yield driver
-    driver.quit()
+    if webhook:
+        requests.post(webhook, json=message)
