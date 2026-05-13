@@ -166,16 +166,6 @@ jobs:
         with:
           name: smoke-failure-screenshots
           path: screenshots/
-      # ================= SLACK =================
-      - name: Send Slack Report
-        if: always()
-        shell: powershell
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          REPORT_FILE: smoke-report.json
-          TITLE: "Smoke Tests"
-        run: |
-          python slack_report.py
 
   # =========================================================
   # REGRESSION TESTS
@@ -329,14 +319,3 @@ jobs:
         with:
           name: regression-failure-screenshots
           path: screenshots/
-
-          # ================= SLACK =================
-      - name: Send Slack Report
-        if: always()
-        shell: powershell
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          REPORT_FILE: regression-report.json
-          TITLE: "Regression Tests"
-        run: |
-          python slack_report.py
