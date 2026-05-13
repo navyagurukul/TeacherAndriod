@@ -87,6 +87,27 @@ def pytest_runtest_logreport(report):
             "outcome": report.outcome
         })
 
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+
+    outcome = yield
+    rep = outcome.get_result()
+
+    if rep.when == "call" and rep.failed:
+
+        driver = item.funcargs.get("driver")
+
+        if driver:
+
+            os.makedirs("screenshots", exist_ok=True)
+
+            file_name = item.name + ".png"
+
+            driver.save_screenshot(
+                f"screenshots/{file_name}"
+            )
+
+            print(f"📸 Screenshot saved: {file_name}")
 
 # =========================================================
 # FINAL SLACK SUMMARY
