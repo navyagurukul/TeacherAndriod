@@ -39,13 +39,11 @@ jobs:
         run: |
           python --version
           pip --version
-
       - name: Install Python Dependencies
         shell: powershell
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       # ================= NODE =================
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -57,73 +55,60 @@ jobs:
         run: |
           node -v
           npm -v
-
       # ================= APPIUM FIX =================
       - name: Remove Old Appium
         shell: powershell
         run: |
           npm uninstall -g appium
-
       - name: Install Stable Appium
         shell: powershell
         run: |
           npm install -g appium@2.11.3
           appium -v
-
       - name: Remove Old UiAutomator2 Driver
         shell: powershell
         run: |
           appium driver uninstall uiautomator2
-
       - name: Install Compatible UiAutomator2 Driver
         shell: powershell
         run: |
           appium driver install uiautomator2@2.45.1
-
       - name: Verify Installed Drivers
         shell: powershell
         run: |
           appium driver list --installed
-
       # ================= JAVA =================
       - name: Verify Java
         shell: powershell
         run: |
           java -version
-
       # ================= DEVICE =================
       - name: Verify Android Device
         shell: powershell
         run: |
           adb devices
-
       # ================= KILL OLD APPIUM =================
       - name: Kill Existing Appium
         shell: powershell
         run: |
           $connections = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue
-
           if ($connections) {
             $pids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
-
             foreach ($processId in $pids) {
               Stop-Process -Id $processId -Force
             }
           }
-
       # ================= START APPIUM =================
       - name: Start Appium Server
         shell: powershell
         run: |
           Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
           Start-Sleep -Seconds 20
-
       # ================= VERIFY APPIUM =================
       - name: Verify Appium Server
         shell: powershell
         run: |
           netstat -ano | findstr 4723
-
           try {
             $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
             Write-Host "Appium Server Running"
@@ -134,25 +119,21 @@ jobs:
             Get-Content appium.log
             exit 1
           }
-
       # ================= RUN TESTS =================
       - name: Run Smoke Tests
         shell: powershell
         run: |
           pytest -m smoke -v -s --alluredir=allure-results
-
       # ================= ALLURE =================
       - name: Install Allure
         shell: powershell
         run: |
           npm install -g allure-commandline
           allure --version
-
       - name: Generate Allure Report
         shell: powershell
         run: |
           allure generate allure-results --clean -o allure-report
-
       # ================= REPORTS =================
       - name: Upload Allure Report
         uses: actions/upload-artifact@v4
@@ -166,29 +147,7 @@ jobs:
         with:
           name: smoke-failure-screenshots
           path: screenshots/
-      # ================= SLACK =================
-      - name: Slack Notification
-        if: always()
-        shell: powershell
-        run: |
-          $status = "${{ job.status }}"
 
-          if ($status -eq "success") {
-            $message = "✅ Smoke Tests Passed - Teacher Android Automation"
-          }
-          else {
-            $message = "❌ Smoke Tests Failed - Teacher Android Automation"
-          }
-
-          $body = @{
-            text = $message
-          } | ConvertTo-Json
-
-          Invoke-RestMethod `
-            -Uri "${{ secrets.SLACK_WEBHOOK_URL }}" `
-            -Method Post `
-            -Body $body `
-            -ContentType 'application/json'
 
   # =========================================================
   # REGRESSION TESTS
@@ -215,13 +174,11 @@ jobs:
         run: |
           python --version
           pip --version
-
       - name: Install Python Dependencies
         shell: powershell
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       # ================= NODE =================
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -233,73 +190,60 @@ jobs:
         run: |
           node -v
           npm -v
-
       # ================= APPIUM FIX =================
       - name: Remove Old Appium
         shell: powershell
         run: |
           npm uninstall -g appium
-
       - name: Install Stable Appium
         shell: powershell
         run: |
           npm install -g appium@2.11.3
           appium -v
-
       - name: Remove Old UiAutomator2 Driver
         shell: powershell
         run: |
           appium driver uninstall uiautomator2
-
       - name: Install Compatible UiAutomator2 Driver
         shell: powershell
         run: |
           appium driver install uiautomator2@2.45.1
-
       - name: Verify Installed Drivers
         shell: powershell
         run: |
           appium driver list --installed
-
       # ================= JAVA =================
       - name: Verify Java
         shell: powershell
         run: |
           java -version
-
       # ================= DEVICE =================
       - name: Verify Android Device
         shell: powershell
         run: |
           adb devices
-
       # ================= KILL OLD APPIUM =================
       - name: Kill Existing Appium
         shell: powershell
         run: |
           $connections = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue
-
           if ($connections) {
             $pids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
-
             foreach ($processId in $pids) {
               Stop-Process -Id $processId -Force
             }
           }
-
       # ================= START APPIUM =================
       - name: Start Appium Server
         shell: powershell
         run: |
           Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
           Start-Sleep -Seconds 20
-
       # ================= VERIFY APPIUM =================
       - name: Verify Appium Server
         shell: powershell
         run: |
           netstat -ano | findstr 4723
-
           try {
             $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
             Write-Host "Appium Server Running"
@@ -310,25 +254,21 @@ jobs:
             Get-Content appium.log
             exit 1
           }
-
       # ================= RUN TESTS =================
       - name: Run Regression Tests
         shell: powershell
         run: |
           pytest -m regression -v -s --alluredir=allure-results
-
       # ================= ALLURE =================
       - name: Install Allure
         shell: powershell
         run: |
           npm install -g allure-commandline
           allure --version
-
       - name: Generate Allure Report
         shell: powershell
         run: |
           allure generate allure-results --clean -o allure-report
-
       # ================= REPORTS =================
       - name: Upload Allure Report
         uses: actions/upload-artifact@v4
@@ -342,27 +282,3 @@ jobs:
         with:
           name: regression-failure-screenshots
           path: screenshots/
-
-           # ================= SLACK =================
-      - name: Slack Notification
-        if: always()
-        shell: powershell
-        run: |
-          $status = "${{ job.status }}"
-
-          if ($status -eq "success") {
-            $message = "✅ Regression Tests Passed - Teacher Android Automation"
-          }
-          else {
-            $message = "❌ Regression Tests Failed - Teacher Android Automation"
-          }
-
-          $body = @{
-            text = $message
-          } | ConvertTo-Json
-
-          Invoke-RestMethod `
-            -Uri "${{ secrets.SLACK_WEBHOOK_URL }}" `
-            -Method Post `
-            -Body $body `
-            -ContentType 'application/json'     
