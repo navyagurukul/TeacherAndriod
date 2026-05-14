@@ -50,16 +50,6 @@ class ClassReportPage(BaseMobilePage):
         AppiumBy.XPATH,
         "//android.widget.TextView[contains(@text,'Assessment') or contains(@text,'Assesment')]"
     )
-    
-    SIDE_MENU = (
-        AppiumBy.XPATH,
-        '//android.widget.TextView[@text="󰍜"]'
-    )
-    
-    LOGOUT = (
-        AppiumBy.XPATH,
-        '//android.widget.TextView[@text="Logout"]'
-    )
 
     # ================= ACTIONS =================
 
@@ -317,9 +307,6 @@ class ClassReportPage(BaseMobilePage):
 
                 print(f"❌ Assessment issue for {grade}: {e}")
 
-    def open_sidebar(self):
-
-        self.click(self.SIDE_MENU, "Side Menu")
     # ================= FULL FLOW =================
 
     def run_full_class_report_flow(self):
@@ -329,7 +316,5 @@ class ClassReportPage(BaseMobilePage):
         self.enable_test_report()
         #self.select_all_grades()
         self.select_assessment_for_each_grade()
-        self.open_sidebar()
-        self.click(self.LOGOUT, "Logout")
 
         print("Completed Class Report flow")
