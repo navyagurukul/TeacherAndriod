@@ -1,8 +1,8 @@
 import pytest
 import os
-import subprocess
 import time
 import requests
+import subprocess
 
 from appium import webdriver
 from appium.options.android import UiAutomator2Options
@@ -25,11 +25,9 @@ def wait_for_appium(server_url, timeout=60):
     for _ in range(timeout // 5):
         try:
             r = requests.get(status_url, timeout=3)
-
             if r.status_code == 200:
                 print("✅ Appium Server Ready")
                 return True
-
         except Exception:
             time.sleep(5)
 
@@ -41,8 +39,7 @@ def wait_for_appium(server_url, timeout=60):
 def stop_app(package_name):
 
     try:
-
-        print(f"🛑 Stopping app: {package_name}")
+        print(f"🛑 Force stopping app: {package_name}")
 
         subprocess.run(
             ["adb", "shell", "am", "force-stop", package_name],
@@ -50,14 +47,13 @@ def stop_app(package_name):
             timeout=20
         )
 
-        time.sleep(3)
+        time.sleep(2)
 
     except Exception as e:
-
         print(f"⚠ Could not stop app: {e}")
 
 
-# ================= DRIVER =================
+# ================= DRIVER FIXTURE =================
 
 @pytest.fixture(scope="function")
 def driver(config):
@@ -66,6 +62,9 @@ def driver(config):
 
     if not wait_for_appium(server_url):
         raise Exception("❌ Appium server not running")
+
+    # Force stop app before every test (IMPORTANT FIX)
+    stop_app(config["app"]["appPackage"])
 
     options = UiAutomator2Options()
 
@@ -78,30 +77,27 @@ def driver(config):
     options.app_package = config["app"]["appPackage"]
     options.app_activity = config["app"]["appActivity"]
 
-    # STABILITY
-    options.no_reset = True
-    options.full_reset = False
-    options.auto_grant_permissions = True
+    # 🔥 IMPORTANT FIX (Fresh app every test)
+    options.no_reset = False
+    options.full_reset = True
 
+    # STABILITY
+    options.auto_grant_permissions = True
     options.new_command_timeout = 600
 
     options.set_capability("adbExecTimeout", 120000)
     options.set_capability("uiautomator2ServerLaunchTimeout", 120000)
     options.set_capability("uiautomator2ServerInstallTimeout", 120000)
     options.set_capability("androidInstallTimeout", 120000)
-
-    
     options.set_capability("disableWindowAnimation", True)
-    
+
     print("🚀 Creating Appium Session")
 
-    driver = webdriver.Remote(
-        config["appium"]["server_url"],
-        options=options
-    )
+    driver = webdriver.Remote(server_url, options=options)
+
+    driver.implicitly_wait(10)
 
     print("✅ Session Created")
-    print(driver.current_package)
     print(driver.session_id)
 
     yield driver
@@ -109,11 +105,11 @@ def driver(config):
     try:
         driver.quit()
         print("🛑 Driver Closed")
-    except:
+    except Exception:
         pass
 
 
-# ================= SCREENSHOT =================
+# ================= SCREENSHOT ON FAILURE =================
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
@@ -125,22 +121,15 @@ def pytest_runtest_makereport(item, call):
 
         driver = item.funcargs.get("driver")
 
-        if not driver:
-            return
+        if driver:
+            try:
+                os.makedirs("screenshots", exist_ok=True)
 
-        try:
+                file_name = item.name + ".png"
+                driver.save_screenshot(f"screenshots/{file_name}")
 
-            os.makedirs("screenshots", exist_ok=True)
+                print(f"📸 Screenshot saved: {file_name}")
 
-            file_name = item.name + ".png"
-
-            driver.save_screenshot(
-                f"screenshots/{file_name}"
-            )
-
-            print(f"📸 Screenshot saved: {file_name}")
-
-        except Exception as e:
-
-            print("❌ Screenshot skipped")
-            print(str(e))
+            except Exception as e:
+                print("❌ Screenshot skipped")
+                print(str(e))
