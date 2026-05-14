@@ -59,34 +59,43 @@ def stop_app(package_name):
 
 @pytest.fixture(scope="function")
 def driver(config):
-    
+
     server_url = config["appium"]["server_url"]
 
     if not wait_for_appium(server_url):
-        raise Exception("Appium server not running")
-    
+        raise Exception("❌ Appium server not running")
+
     stop_app(config["app"]["appPackage"])
-    
+    time.sleep(2)
+
     options = UiAutomator2Options()
 
     options.platform_name = config["device"]["platformName"]
     options.device_name = config["device"]["deviceName"]
     options.automation_name = config["device"]["automationName"]
+
+    # stability
     options.no_reset = config["device"]["noReset"]
-    
+    options.full_reset = False
+
     options.set_capability("autoGrantPermissions", True)
-    options.set_capability("noReset", config["device"]["noReset"])
-    options.set_capability("fullReset", False)
+    options.set_capability("newCommandTimeout", 600)
+    options.set_capability("appWaitActivity", "*")
+    options.set_capability("uiautomator2ServerInstallTimeout", 120000)
+    options.set_capability("uiautomator2ServerLaunchTimeout", 120000)
 
     options.app_package = config["app"]["appPackage"]
     options.app_activity = config["app"]["appActivity"]
 
     driver = webdriver.Remote(
-        config["appium"]["server_url"],
+        server_url,
         options=options
     )
 
+    driver.implicitly_wait(10)
+
     yield driver
+
     try:
         driver.quit()
     except:
