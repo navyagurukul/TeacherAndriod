@@ -3,17 +3,19 @@ import os
 import time
 import requests
 import subprocess
-
+import yaml
 from appium import webdriver
 from appium.options.android import UiAutomator2Options
 from utils.config_reader import load_config
 
-
 # ================= CONFIG =================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def config():
-    return load_config()
+    with open(CONFIG_PATH, "r") as file:
+        return yaml.safe_load(file)
 
 
 # ================= WAIT FOR APPIUM =================
@@ -57,57 +59,38 @@ def stop_app(package_name):
 
 @pytest.fixture(scope="function")
 def driver(config):
-
+    
     server_url = config["appium"]["server_url"]
 
     if not wait_for_appium(server_url):
-        raise Exception("❌ Appium server not running")
-
-    # Force stop app before every test (IMPORTANT FIX)
+        raise Exception("Appium server not running")
+    
     stop_app(config["app"]["appPackage"])
-
+    
     options = UiAutomator2Options()
 
-    # DEVICE
     options.platform_name = config["device"]["platformName"]
     options.device_name = config["device"]["deviceName"]
-    options.automation_name = "UiAutomator2"
+    options.automation_name = config["device"]["automationName"]
+    options.no_reset = config["device"]["noReset"]
+    
+    options.set_capability("autoGrantPermissions", True)
+    options.set_capability("noReset", config["device"]["noReset"])
+    options.set_capability("fullReset", False)
 
-    # APP
     options.app_package = config["app"]["appPackage"]
     options.app_activity = config["app"]["appActivity"]
 
-    # 🔥 IMPORTANT FIX (Fresh app every test)
-    options.no_reset = False
-    options.full_reset = True
-
-    # STABILITY
-    options.auto_grant_permissions = True
-    options.new_command_timeout = 600
-
-    options.set_capability("adbExecTimeout", 120000)
-    options.set_capability("uiautomator2ServerLaunchTimeout", 120000)
-    options.set_capability("uiautomator2ServerInstallTimeout", 120000)
-    options.set_capability("androidInstallTimeout", 120000)
-    options.set_capability("disableWindowAnimation", True)
-
-    print("🚀 Creating Appium Session")
-
-    driver = webdriver.Remote(server_url, options=options)
-
-    driver.implicitly_wait(10)
-
-    print("✅ Session Created")
-    print(driver.session_id)
+    driver = webdriver.Remote(
+        config["appium"]["server_url"],
+        options=options
+    )
 
     yield driver
-
     try:
         driver.quit()
-        print("🛑 Driver Closed")
-    except Exception:
+    except:
         pass
-
 
 # ================= SCREENSHOT ON FAILURE =================
 
@@ -124,12 +107,9 @@ def pytest_runtest_makereport(item, call):
         if driver:
             try:
                 os.makedirs("screenshots", exist_ok=True)
-
                 file_name = item.name + ".png"
                 driver.save_screenshot(f"screenshots/{file_name}")
-
                 print(f"📸 Screenshot saved: {file_name}")
-
             except Exception as e:
                 print("❌ Screenshot skipped")
                 print(str(e))
