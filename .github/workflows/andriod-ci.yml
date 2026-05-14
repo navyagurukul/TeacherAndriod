@@ -115,20 +115,8 @@ jobs:
       - name: Start Appium Server
         shell: powershell
         run: |
-          Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 --log-level info > appium.log 2>&1"
-            Start-Sleep -Seconds 10
-
-            # WAIT UNTIL SERVER IS REALLY READY
-            for ($i=0; $i -lt 30; $i++) {
-                try {
-                    $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
-                    Write-Host "✅ Appium is READY"
-                    break
-                } catch {
-                    Write-Host "⏳ Waiting for Appium..."
-                    Start-Sleep -Seconds 5
-                }
-            }
+          Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
+          Start-Sleep -Seconds 20
 
       # ================= VERIFY APPIUM =================
       - name: Verify Appium Server
@@ -146,12 +134,6 @@ jobs:
             Get-Content appium.log
             exit 1
           }
-
-      - name: Restart ADB
-        run: |
-          adb kill-server
-          adb start-server
-          adb devices
 
       # ================= RUN TESTS =================
       - name: Run Smoke Tests
@@ -184,6 +166,29 @@ jobs:
         with:
           name: smoke-failure-screenshots
           path: screenshots/
+      # ================= SLACK =================
+      - name: Slack Notification
+        if: always()
+        shell: powershell
+        run: |
+          $status = "${{ job.status }}"
+
+          if ($status -eq "success") {
+            $message = "✅ Smoke Tests Passed - Teacher Android Automation"
+          }
+          else {
+            $message = "❌ Smoke Tests Failed - Teacher Android Automation"
+          }
+
+          $body = @{
+            text = $message
+          } | ConvertTo-Json
+
+          Invoke-RestMethod `
+            -Uri "${{ secrets.SLACK_WEBHOOK_URL }}" `
+            -Method Post `
+            -Body $body `
+            -ContentType 'application/json'
 
   # =========================================================
   # REGRESSION TESTS
@@ -286,20 +291,8 @@ jobs:
       - name: Start Appium Server
         shell: powershell
         run: |
-          Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 --log-level info > appium.log 2>&1"
-            Start-Sleep -Seconds 10
-
-            # WAIT UNTIL SERVER IS REALLY READY
-            for ($i=0; $i -lt 30; $i++) {
-                try {
-                    $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
-                    Write-Host "✅ Appium is READY"
-                    break
-                } catch {
-                    Write-Host "⏳ Waiting for Appium..."
-                    Start-Sleep -Seconds 5
-                }
-            }
+          Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
+          Start-Sleep -Seconds 20
 
       # ================= VERIFY APPIUM =================
       - name: Verify Appium Server
@@ -317,12 +310,6 @@ jobs:
             Get-Content appium.log
             exit 1
           }
-
-      - name: Restart ADB
-        run: |
-          adb kill-server
-          adb start-server
-          adb devices
 
       # ================= RUN TESTS =================
       - name: Run Regression Tests
@@ -355,3 +342,27 @@ jobs:
         with:
           name: regression-failure-screenshots
           path: screenshots/
+
+           # ================= SLACK =================
+      - name: Slack Notification
+        if: always()
+        shell: powershell
+        run: |
+          $status = "${{ job.status }}"
+
+          if ($status -eq "success") {
+            $message = "✅ Regression Tests Passed - Teacher Android Automation"
+          }
+          else {
+            $message = "❌ Regression Tests Failed - Teacher Android Automation"
+          }
+
+          $body = @{
+            text = $message
+          } | ConvertTo-Json
+
+          Invoke-RestMethod `
+            -Uri "${{ secrets.SLACK_WEBHOOK_URL }}" `
+            -Method Post `
+            -Body $body `
+            -ContentType 'application/json'     
