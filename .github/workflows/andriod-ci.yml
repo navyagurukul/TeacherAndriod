@@ -11,10 +11,6 @@ on:
     - cron: "0 2 * * *"
 
   workflow_dispatch:
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 jobs:
 
@@ -143,10 +139,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: smoke-allure-report
-          path: allure-report
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4    
+          path: allure-report    
 
       - name: Upload Failure Screenshots
         if: failure()
@@ -281,10 +274,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: regression-allure-report
-          path: allure-report
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4    
+          path: allure-report    
 
       - name: Upload Failure Screenshots
         if: failure()
