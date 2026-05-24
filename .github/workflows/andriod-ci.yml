@@ -47,8 +47,6 @@ jobs:
       # ================= NODE =================
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: "18"
 
       - name: Verify Node
         shell: powershell
@@ -182,8 +180,6 @@ jobs:
       # ================= NODE =================
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: "18"
 
       - name: Verify Node
         shell: powershell
@@ -274,7 +270,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: regression-allure-report
-          path: allure-report    
+          path: allure-report
 
       - name: Upload Failure Screenshots
         if: failure()
