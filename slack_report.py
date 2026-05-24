@@ -68,10 +68,10 @@ def send_slack(message):
     response = requests.post(webhook, json=message)
 
     if response.status_code != 200:
-        print("❌ Slack Error:", response.text)
+        print("Slack Error:", response.text)
         raise Exception("Slack notification failed")
 
-    print("✅ Slack message sent successfully")
+    print("Slack message sent successfully")
 
 
 # ----------------------------

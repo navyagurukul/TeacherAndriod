@@ -37,4 +37,4 @@ class TestManagement:
         # DELETE STUDENT PAGE
         management.delete_student()
 
-        print("✅ Student Management flow completed successfully")
+        print("Student Management flow completed successfully")

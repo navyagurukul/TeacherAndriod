@@ -12,7 +12,7 @@ class TestLessonPlan:
     @pytest.mark.android
     def test_lesson_plan_pdfs(self, driver, config):
 
-        print("🚀 Test Started")
+        print("Test Started")
 
         login = LoginPage(driver)
         home = HomePage(driver)

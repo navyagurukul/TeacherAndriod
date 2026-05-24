@@ -10,7 +10,7 @@ class TestStudentReport:
     @pytest.mark.android
     def test_student_report_page(self, driver, config):
 
-        print("🚀 Test Started")
+        print("Test Started")
 
         login = LoginPage(driver)
         page = StudentReportPage(driver)

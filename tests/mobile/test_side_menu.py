@@ -11,7 +11,7 @@ class TestSideMenu:
     @pytest.mark.android
     def test_side_menu_page(self, driver, config):
 
-        print("🚀 Test Started")
+        print("Test Started")
 
         login = LoginPage(driver)
         page = SidebarPage(driver)
