@@ -124,37 +124,26 @@ jobs:
           Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
 
       # ================= WAIT FOR APPIUM =================
-      - name: Wait For Appium
+      - name: Verify Appium Server
         shell: powershell
         run: |
-          $maxRetries = 12
-          $retry = 0
-
-          while ($retry -lt $maxRetries) {
-
-            try {
-              $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
-              Write-Host "Appium Server Running"
-              exit 0
-            }
-
-            catch {
-              Write-Host "Waiting for Appium..."
-              Start-Sleep -Seconds 10
-            }
-
-            $retry++
+          netstat -ano | findstr 4723
+          try {
+            $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
+            Write-Host "Appium Server Running"
+            $response
           }
-
-          Write-Host "Appium failed to start"
-          Get-Content appium.log
-          exit 1
+          catch {
+            Write-Host "Appium Server Failed"
+            Get-Content appium.log
+            exit 1
+          }
 
       # ================= RUN TESTS =================
       - name: Run Smoke Tests
         shell: powershell
         run: |
-          pytest -m smoke -v -s --reruns 2 --reruns-delay 5 --alluredir=allure-results
+          pytest -m smoke -v -s --alluredir=allure-results
 
       # ================= ALLURE =================
       - name: Install Allure
@@ -300,38 +289,25 @@ jobs:
           Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
 
       # ================= WAIT FOR APPIUM =================
-      - name: Wait For Appium
+      - name: Verify Appium Server
         shell: powershell
         run: |
-          $maxRetries = 12
-          $retry = 0
-
-          while ($retry -lt $maxRetries) {
-
-            try {
-              $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
-              Write-Host "Appium Server Running"
-              exit 0
-            }
-
-            catch {
-              Write-Host "Waiting for Appium..."
-              Start-Sleep -Seconds 10
-            }
-
-            $retry++
+          netstat -ano | findstr 4723
+          try {
+            $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
+            Write-Host "Appium Server Running"
+            $response
           }
-
-          Write-Host "Appium failed to start"
-          Get-Content appium.log
-          exit 1
-
+          catch {
+            Write-Host "Appium Server Failed"
+            Get-Content appium.log
+            exit 1
+          }
       # ================= RUN TESTS =================
       - name: Run Regression Tests
         shell: powershell
         run: |
-          pytest -m regression -v -s --reruns 2 --reruns-delay 5 --alluredir=allure-results
-
+          pytest -m regression -v -s --alluredir=allure-results
       # ================= ALLURE =================
       - name: Install Allure
         shell: powershell
