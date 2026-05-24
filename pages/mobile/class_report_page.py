@@ -168,13 +168,20 @@ class ClassReportPage(BaseMobilePage):
     # ================= ASSESSMENTS =================
 
     def open_assessment_dropdown(self):
+
+        time.sleep(2)
+
         dropdown = self.wait.until(
-            EC.element_to_be_clickable(self.ASSESSMENT_DROPDOWN)
+            EC.presence_of_element_located(
+                self.ASSESSMENT_DROPDOWN
+            )
         )
+
         dropdown.click()
 
         print("Assessment dropdown opened")
-        time.sleep(1)
+
+        time.sleep(2)
 
     def get_assessment_names(self):
         self.open_assessment_dropdown()
@@ -190,73 +197,93 @@ class ClassReportPage(BaseMobilePage):
 
         selected = set()
 
-        while True:
+        retry_count = 0
+        max_retries = 20
 
-            # open dropdown
-            self.open_assessment_dropdown()
-
-            time.sleep(1)
-
-            # get all visible assessments
-            options = self.driver.find_elements(*self.ASSESSMENT_OPTIONS)
-
-            names = [
-                o.text.strip()
-                for o in options
-                if o.text.strip()
-            ]
-
-            # remove duplicates
-            names = list(dict.fromkeys(names))
-
-            print(f"Current visible options: {names}")
-
-            # find next unselected assessment
-            next_item = None
-
-            for name in names:
-
-                if name not in selected:
-
-                    next_item = name
-                    break
-
-            # all done
-            if not next_item:
-
-                print("✅ All assessments selected")
-
-                # close dropdown / return back
-                self.driver.back()
-
-                print("↩️ Returned back after selecting all assessments")
-
-                return
+        while retry_count < max_retries:
 
             try:
 
-                print(f"Selecting: {next_item}")
+                self.open_assessment_dropdown()
 
-                option = self.wait.until(
-                    EC.element_to_be_clickable((
-                        AppiumBy.XPATH,
-                        f'//android.widget.TextView[@text="{next_item}"]'
-                    ))
+                time.sleep(2)
+
+                options = self.driver.find_elements(
+                    *self.ASSESSMENT_OPTIONS
                 )
 
-                option.click()
+                if not options:
 
-                selected.add(next_item)
+                    print("❌ No assessment options found")
+                    return
 
-                print(f"Selected so far: {selected}")
+                found_new = False
 
-                time.sleep(1)
+                for option in options:
+
+                    try:
+
+                        name = option.text.strip()
+
+                        if not name:
+                            continue
+
+                        if name in selected:
+                            continue
+
+                        print(f"➡️ Selecting: {name}")
+
+                        option.click()
+
+                        time.sleep(2)
+
+                        selected.add(name)
+
+                        print(f"✔️ Selected: {selected}")
+
+                        found_new = True
+
+                        break
+
+                    except Exception as inner_error:
+
+                        print(f"❌ Error processing option: {inner_error}")
+
+                if not found_new:
+
+                    print("✅ All assessments processed")
+                    return
+
+                retry_count += 1
 
             except Exception as e:
 
-                print(f"❌ Error selecting {next_item}: {e}")
+                print(f"❌ Dropdown failure: {e}")
 
-                return
+                retry_count += 1
+                
+    def get_assessment_state(self):
+
+        try:
+
+            source = self.driver.page_source.lower()
+
+            if "locked" in source:
+                return "locked"
+
+            if "resume" in source:
+                return "in_progress"
+
+            if "continue" in source:
+                return "in_progress"
+
+            if "completed" in source:
+                return "completed"
+
+            return "open"
+
+        except:
+            return "unknown"
 
     def select_assessment_for_each_grade(self):
 
