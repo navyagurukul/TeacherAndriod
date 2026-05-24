@@ -5,7 +5,7 @@ on:
     branches: ["dev"]
 
   push:
-    branches: ["main","dev"]
+    branches: ["main", "dev"]
 
   schedule:
     - cron: "0 2 * * *"
@@ -19,8 +19,9 @@ jobs:
   # =========================================================
   smoke-tests:
     name: Smoke Tests
-    if: github.event_name != 'pull_request' || github.event_name == 'push_request' || github.event_name == 'workflow_dispatch'
-    runs-on: [self-hosted, Windows]
+    if: github.event_name != 'pull_request'
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 90
 
     env:
       APPIUM_PORT: 4723
@@ -39,11 +40,14 @@ jobs:
         run: |
           python --version
           pip --version
+
       - name: Install Python Dependencies
         shell: powershell
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest-rerunfailures
+
       # ================= NODE =================
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -55,91 +59,123 @@ jobs:
         run: |
           node -v
           npm -v
-      # ================= APPIUM FIX =================
-      - name: Remove Old Appium
+
+      # ================= APPIUM =================
+      # Appium + UiAutomator2 should already be installed
+      # on self-hosted runner
+      - name: Verify Appium
         shell: powershell
         run: |
-          npm uninstall -g appium
-      - name: Install Stable Appium
-        shell: powershell
-        run: |
-          npm install -g appium@2.11.3
           appium -v
-      - name: Remove Old UiAutomator2 Driver
-        shell: powershell
-        run: |
-          appium driver uninstall uiautomator2
-      - name: Install Compatible UiAutomator2 Driver
-        shell: powershell
-        run: |
-          appium driver install uiautomator2@2.45.1
-      - name: Verify Installed Drivers
-        shell: powershell
-        run: |
           appium driver list --installed
+
       # ================= JAVA =================
       - name: Verify Java
         shell: powershell
         run: |
           java -version
-      # ================= DEVICE =================
-      - name: Verify Android Device
+
+      # ================= ADB RESET =================
+      - name: Restart ADB
         shell: powershell
         run: |
+          adb kill-server
+          Start-Sleep -Seconds 5
+          adb start-server
+          Start-Sleep -Seconds 10
           adb devices
+
+      # ================= DEVICE =================
+      - name: Wait For Device
+        shell: powershell
+        run: |
+          adb wait-for-device
+          Start-Sleep -Seconds 15
+          adb shell getprop sys.boot_completed
+
+      # ================= CLEAN REPORTS =================
+      - name: Clean Reports
+        shell: powershell
+        run: |
+          if (Test-Path allure-results) {
+            Remove-Item allure-results -Recurse -Force
+          }
+
+          if (Test-Path allure-report) {
+            Remove-Item allure-report -Recurse -Force
+          }
+
       # ================= KILL OLD APPIUM =================
       - name: Kill Existing Appium
         shell: powershell
         run: |
           $connections = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue
+
           if ($connections) {
             $pids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
+
             foreach ($processId in $pids) {
-              Stop-Process -Id $processId -Force
+              Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
             }
           }
+
       # ================= START APPIUM =================
       - name: Start Appium Server
         shell: powershell
         run: |
           Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
-          Start-Sleep -Seconds 20
-      # ================= VERIFY APPIUM =================
-      - name: Verify Appium Server
+
+      # ================= WAIT FOR APPIUM =================
+      - name: Wait For Appium
         shell: powershell
         run: |
-          netstat -ano | findstr 4723
-          try {
-            $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
-            Write-Host "Appium Server Running"
-            $response
+          $maxRetries = 12
+          $retry = 0
+
+          while ($retry -lt $maxRetries) {
+
+            try {
+              $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
+              Write-Host "Appium Server Running"
+              exit 0
+            }
+
+            catch {
+              Write-Host "Waiting for Appium..."
+              Start-Sleep -Seconds 10
+            }
+
+            $retry++
           }
-          catch {
-            Write-Host "Appium Server Failed"
-            Get-Content appium.log
-            exit 1
-          }
+
+          Write-Host "Appium failed to start"
+          Get-Content appium.log
+          exit 1
+
       # ================= RUN TESTS =================
       - name: Run Smoke Tests
         shell: powershell
         run: |
-          pytest -m smoke -v -s --alluredir=allure-results
+          pytest -m smoke -v -s --reruns 2 --reruns-delay 5 --alluredir=allure-results
+
       # ================= ALLURE =================
       - name: Install Allure
         shell: powershell
         run: |
           npm install -g allure-commandline
           allure --version
+
       - name: Generate Allure Report
         shell: powershell
         run: |
           allure generate allure-results --clean -o allure-report
+
       # ================= REPORTS =================
       - name: Upload Allure Report
         uses: actions/upload-artifact@v4
         with:
           name: smoke-allure-report
-          path: allure-report    
+          path: allure-report
 
       - name: Upload Failure Screenshots
         if: failure()
@@ -148,6 +184,15 @@ jobs:
           name: smoke-failure-screenshots
           path: screenshots/
 
+      # ================= CLEANUP =================
+      - name: Cleanup
+        if: always()
+        shell: powershell
+        run: |
+          Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+          adb kill-server
+
+
 
   # =========================================================
   # REGRESSION TESTS
@@ -155,7 +200,8 @@ jobs:
   regression-tests:
     name: Regression Tests
     if: github.event_name != 'pull_request'
-    runs-on: [self-hosted, Windows]
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 180
 
     env:
       APPIUM_PORT: 4723
@@ -174,107 +220,138 @@ jobs:
         run: |
           python --version
           pip --version
+
       - name: Install Python Dependencies
         shell: powershell
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest-rerunfailures
+
       # ================= NODE =================
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-
+      
       - name: Verify Node
         shell: powershell
         run: |
           node -v
           npm -v
-      # ================= APPIUM FIX =================
-      - name: Remove Old Appium
+
+      # ================= APPIUM =================
+      - name: Verify Appium
         shell: powershell
         run: |
-          npm uninstall -g appium
-      - name: Install Stable Appium
-        shell: powershell
-        run: |
-          npm install -g appium@2.11.3
           appium -v
-      - name: Remove Old UiAutomator2 Driver
-        shell: powershell
-        run: |
-          appium driver uninstall uiautomator2
-      - name: Install Compatible UiAutomator2 Driver
-        shell: powershell
-        run: |
-          appium driver install uiautomator2@2.45.1
-      - name: Verify Installed Drivers
-        shell: powershell
-        run: |
           appium driver list --installed
+
       # ================= JAVA =================
       - name: Verify Java
         shell: powershell
         run: |
           java -version
-      # ================= DEVICE =================
-      - name: Verify Android Device
+
+      # ================= ADB RESET =================
+      - name: Restart ADB
         shell: powershell
         run: |
+          adb kill-server
+          Start-Sleep -Seconds 5
+          adb start-server
+          Start-Sleep -Seconds 10
           adb devices
+
+      # ================= DEVICE =================
+      - name: Wait For Device
+        shell: powershell
+        run: |
+          adb wait-for-device
+          Start-Sleep -Seconds 15
+          adb shell getprop sys.boot_completed
+
+      # ================= CLEAN REPORTS =================
+      - name: Clean Reports
+        shell: powershell
+        run: |
+          if (Test-Path allure-results) {
+            Remove-Item allure-results -Recurse -Force
+          }
+
+          if (Test-Path allure-report) {
+            Remove-Item allure-report -Recurse -Force
+          }
+
       # ================= KILL OLD APPIUM =================
       - name: Kill Existing Appium
         shell: powershell
         run: |
           $connections = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue
+
           if ($connections) {
             $pids = $connections | Select-Object -ExpandProperty OwningProcess -Unique
+
             foreach ($processId in $pids) {
-              Stop-Process -Id $processId -Force
+              Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
             }
           }
+
       # ================= START APPIUM =================
       - name: Start Appium Server
         shell: powershell
         run: |
           Start-Process cmd.exe -ArgumentList "/c appium --address 127.0.0.1 --port 4723 > appium.log 2>&1"
-          Start-Sleep -Seconds 20
-      # ================= VERIFY APPIUM =================
-      - name: Verify Appium Server
+
+      # ================= WAIT FOR APPIUM =================
+      - name: Wait For Appium
         shell: powershell
         run: |
-          netstat -ano | findstr 4723
-          try {
-            $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
-            Write-Host "Appium Server Running"
-            $response
+          $maxRetries = 12
+          $retry = 0
+
+          while ($retry -lt $maxRetries) {
+
+            try {
+              $response = Invoke-RestMethod -Uri "http://127.0.0.1:4723/status"
+              Write-Host "Appium Server Running"
+              exit 0
+            }
+
+            catch {
+              Write-Host "Waiting for Appium..."
+              Start-Sleep -Seconds 10
+            }
+
+            $retry++
           }
-          catch {
-            Write-Host "Appium Server Failed"
-            Get-Content appium.log
-            exit 1
-          }
+
+          Write-Host "Appium failed to start"
+          Get-Content appium.log
+          exit 1
+
       # ================= RUN TESTS =================
       - name: Run Regression Tests
         shell: powershell
         run: |
-          pytest -m regression -v -s --alluredir=allure-results
+          pytest -m regression -v -s --reruns 2 --reruns-delay 5 --alluredir=allure-results
+
       # ================= ALLURE =================
       - name: Install Allure
         shell: powershell
         run: |
           npm install -g allure-commandline
           allure --version
+
       - name: Generate Allure Report
         shell: powershell
         run: |
           allure generate allure-results --clean -o allure-report
+
       # ================= REPORTS =================
       - name: Upload Allure Report
         uses: actions/upload-artifact@v4
         with:
           name: regression-allure-report
-          path: allure-report    
+          path: allure-report
 
       - name: Upload Failure Screenshots
         if: failure()
@@ -282,3 +359,11 @@ jobs:
         with:
           name: regression-failure-screenshots
           path: screenshots/
+
+      # ================= CLEANUP =================
+      - name: Cleanup
+        if: always()
+        shell: powershell
+        run: |
+          Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+          adb kill-server
