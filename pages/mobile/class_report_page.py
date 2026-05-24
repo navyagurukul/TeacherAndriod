@@ -1,7 +1,7 @@
 import time
-from appium import webdriver
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from core.base.base_mobile_page import BaseMobilePage
 
 
@@ -17,25 +17,21 @@ class ClassReportPage(BaseMobilePage):
         "//android.widget.TextView[@text='Class Report']"
     )
 
-    # grade dropdown arrow
     GRADE_DROPDOWN = (
         AppiumBy.XPATH,
         '(//android.widget.TextView[@text="󰅀"])[1]'
     )
 
-    # all grades in popup
     GRADE_OPTIONS = (
         AppiumBy.XPATH,
-        "//android.view.ViewGroup[contains(@content-desc,'Grade') or contains(@content-desc,'Class') or contains(@content-desc,'UKG') or contains(@content-desc,'LKG') or contains(@content-desc,'ETC') or contains(@content-desc,'CT')]"
+        "//android.view.ViewGroup[contains(@content-desc,'Grade') or contains(@content-desc,'Class')]"
     )
 
-    # report toggle
     REPORT_TOGGLE = (
         AppiumBy.CLASS_NAME,
         "android.widget.Switch"
     )
 
-    # total/monthly toggle
     TOTAL_MONTHLY_TOGGLE = (
         AppiumBy.CLASS_NAME,
         "android.widget.Switch"
@@ -51,80 +47,73 @@ class ClassReportPage(BaseMobilePage):
         "//android.widget.TextView[contains(@text,'Assessment') or contains(@text,'Assesment')]"
     )
 
-    # ================= ACTIONS =================
+    # ================= HELPERS =================
+
+    def wait_clickable(self, locator, timeout=15):
+        return WebDriverWait(self.driver, timeout).until(
+            EC.element_to_be_clickable(locator)
+        )
+
+    def wait_present(self, locator, timeout=15):
+        return WebDriverWait(self.driver, timeout).until(
+            EC.presence_of_element_located(locator)
+        )
+
+    # ================= CLASS REPORT =================
 
     def open_class_report(self):
-
-        self.click(self.CLASS_REPORT_TAB)
-
+        self.wait_clickable(self.CLASS_REPORT_TAB).click()
         print("Class Report opened")
-
-        time.sleep(2)
 
     # ================= GRADES =================
 
     def get_all_grades(self):
 
-        self.click(self.GRADE_DROPDOWN)
-
+        self.wait_clickable(self.GRADE_DROPDOWN).click()
         time.sleep(2)
 
         elements = self.driver.find_elements(*self.GRADE_OPTIONS)
 
         grades = []
-
         for el in elements:
-
-            grade = el.get_attribute("content-desc")
-
-            if grade and grade.strip():
-
-                grades.append(grade.strip())
+            val = el.get_attribute("content-desc")
+            if val and val.strip():
+                grades.append(val.strip())
 
         grades = list(dict.fromkeys(grades))
-
-        print(f"rades found: {grades}")
+        print(f"Grades found: {grades}")
 
         return grades
 
     def select_grade(self, grade):
 
         print(f"Selecting grade: {grade}")
-        time.sleep(1)
-        
-        grade_element = self.wait.until(
-            EC.element_to_be_clickable((
-                AppiumBy.XPATH,
-                f'//android.view.ViewGroup[@content-desc="{grade}"]'
-            ))
+
+        locator = (
+            AppiumBy.XPATH,
+            f'//android.view.ViewGroup[@content-desc="{grade}"]'
         )
 
-        grade_element.click()
+        self.wait_clickable(locator).click()
 
         print(f"Selected: {grade}")
-        #self.click(self.GRADE_DROPDOWN)
-
         time.sleep(2)
 
     def select_all_grades(self):
 
         grades = self.get_all_grades()
 
-        for index, grade in enumerate(grades):
+        for i, grade in enumerate(grades):
 
             self.select_grade(grade)
 
-            # reopen dropdown except last grade
-            if index != len(grades) - 1:
-
-                self.click(self.GRADE_DROPDOWN)
-
+            if i != len(grades) - 1:
+                self.wait_clickable(self.GRADE_DROPDOWN).click()
                 time.sleep(1)
 
         print("All grades selected")
 
-        self.click(self.CLASS_REPORT_TAB)
-
+        self.wait_clickable(self.CLASS_REPORT_TAB).click()
         print("Returned back after selecting all grades")
 
     # ================= TOGGLES =================
@@ -134,214 +123,134 @@ class ClassReportPage(BaseMobilePage):
         toggles = self.driver.find_elements(*self.TOTAL_MONTHLY_TOGGLE)
 
         if len(toggles) > 1:
-
             toggles[1].click()
-
             print("Total/Monthly toggled")
 
         time.sleep(2)
 
     def enable_test_report(self):
 
-        print("Switching to Test Report")
-
         toggles = self.driver.find_elements(*self.REPORT_TOGGLE)
 
         if toggles:
-
             toggle = toggles[0]
 
-            checked = toggle.get_attribute("checked")
-
-            if checked == "false":
-
+            if toggle.get_attribute("checked") == "false":
                 toggle.click()
-
                 print("Switched to Test Report")
-
-            else:
-
-                print("Already in Test Report")
 
         time.sleep(2)
 
-    # ================= ASSESSMENTS =================
+    # ================= ASSESSMENTS (FIXED) =================
 
     def open_assessment_dropdown(self):
 
-        time.sleep(2)
-
-        dropdown = self.wait.until(
-            EC.presence_of_element_located(
-                self.ASSESSMENT_DROPDOWN
-            )
-        )
-
-        dropdown.click()
+        self.wait_present(self.ASSESSMENT_DROPDOWN)
+        self.wait_clickable(self.ASSESSMENT_DROPDOWN).click()
 
         print("Assessment dropdown opened")
-
         time.sleep(2)
-
-    def get_assessment_names(self):
-        self.open_assessment_dropdown()
-
-        options = self.driver.find_elements(*self.ASSESSMENT_OPTIONS)
-
-        names = [o.text for o in options if o.text.strip()]
-        print(f"Assessments: {names}")
-
-        return names
 
     def select_all_assessments(self):
 
         selected = set()
 
-        retry_count = 0
-        max_retries = 20
-
-        while retry_count < max_retries:
+        for _ in range(20):
 
             try:
-
                 self.open_assessment_dropdown()
 
-                time.sleep(2)
+                options = self.driver.find_elements(*self.ASSESSMENT_OPTIONS)
 
-                options = self.driver.find_elements(
-                    *self.ASSESSMENT_OPTIONS
-                )
-
-                if not options:
-
-                    print("No assessment options found")
-                    return
+                names = [
+                    o.text.strip()
+                    for o in options
+                    if o.text and o.text.strip()
+                ]
 
                 found_new = False
 
-                for option in options:
+                for name in names:
 
-                    try:
+                    if name in selected:
+                        continue
 
-                        name = option.text.strip()
+                    print(f"Selecting: {name}")
 
-                        if not name:
-                            continue
+                    locator = (
+                        AppiumBy.XPATH,
+                        f"//android.widget.TextView[@text='{name}']"
+                    )
 
-                        if name in selected:
-                            continue
+                    self.wait_clickable(locator).click()
 
-                        print(f"Selecting: {name}")
+                    selected.add(name)
 
-                        option.click()
+                    print(f"Selected: {selected}")
 
-                        time.sleep(2)
+                    time.sleep(2)
 
-                        selected.add(name)
-
-                        print(f"Selected: {selected}")
-
-                        found_new = True
-
-                        break
-
-                    except Exception as inner_error:
-
-                        print(f"Error processing option: {inner_error}")
+                    found_new = True
+                    break
 
                 if not found_new:
-
                     print("All assessments processed")
                     return
 
-                retry_count += 1
-
             except Exception as e:
+                print(f"Retrying due to: {e}")
+                time.sleep(2)
 
-                print(f"Dropdown failure: {e}")
-
-                retry_count += 1
-                
     def get_assessment_state(self):
 
-        try:
+        source = self.driver.page_source.lower()
 
-            source = self.driver.page_source.lower()
+        if "locked" in source:
+            return "locked"
+        if "resume" in source or "continue" in source:
+            return "in_progress"
+        if "completed" in source:
+            return "completed"
 
-            if "locked" in source:
-                return "locked"
+        return "open"
 
-            if "resume" in source:
-                return "in_progress"
-
-            if "continue" in source:
-                return "in_progress"
-
-            if "completed" in source:
-                return "completed"
-
-            return "open"
-
-        except:
-            return "unknown"
+    # ================= FULL FLOW =================
 
     def select_assessment_for_each_grade(self):
 
-        # open grade dropdown once
         grades = self.get_all_grades()
 
-        for index, grade in enumerate(grades):
+        for i, grade in enumerate(grades):
 
             print(f"\nProcessing Grade: {grade}")
 
             try:
-
-                # select grade
                 self.select_grade(grade)
 
-                # wait for assessment dropdown
-                self.wait.until(
-                    EC.presence_of_element_located(
-                        self.ASSESSMENT_DROPDOWN
-                    )
-                )
+                self.wait_present(self.ASSESSMENT_DROPDOWN)
+                self.wait_clickable(self.ASSESSMENT_DROPDOWN)
 
-                self.wait.until(
-                    EC.element_to_be_clickable(
-                        self.ASSESSMENT_DROPDOWN
-                    )
-                )
-
-                time.sleep(2)
-
-                # select all assessments
                 self.select_all_assessments()
 
                 print(f"Completed assessments for {grade}")
 
-                # reopen dropdown except for last grade
-                if index != len(grades) - 1:
-
-                    self.click(self.GRADE_DROPDOWN)
-
+                if i != len(grades) - 1:
+                    self.wait_clickable(self.GRADE_DROPDOWN).click()
                     time.sleep(1)
-
                 else:
-
                     print("All grades completed")
 
             except Exception as e:
-
                 print(f"Assessment issue for {grade}: {e}")
 
-    # ================= FULL FLOW =================
+    # ================= MAIN FLOW =================
 
     def run_full_class_report_flow(self):
+
         self.open_class_report()
         self.select_all_grades()
         self.toggle_total_monthly()
         self.enable_test_report()
-        #self.select_all_grades()
         self.select_assessment_for_each_grade()
 
         print("Completed Class Report flow")
