@@ -26,7 +26,7 @@ class LoginPage(BaseMobilePage):
     # ===== ACTIONS =====
 
     def login(self, school, phone):
-        print("🔹 Login Flow Started")
+        print("Login Flow Started")
 
         self.wait.until(EC.presence_of_element_located(self.SEARCH_SCHOOL))
 

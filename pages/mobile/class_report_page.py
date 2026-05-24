@@ -57,7 +57,7 @@ class ClassReportPage(BaseMobilePage):
 
         self.click(self.CLASS_REPORT_TAB)
 
-        print("✅ Class Report opened")
+        print("Class Report opened")
 
         time.sleep(2)
 
@@ -83,13 +83,13 @@ class ClassReportPage(BaseMobilePage):
 
         grades = list(dict.fromkeys(grades))
 
-        print(f"📚 Grades found: {grades}")
+        print(f"rades found: {grades}")
 
         return grades
 
     def select_grade(self, grade):
 
-        print(f"➡️ Selecting grade: {grade}")
+        print(f"Selecting grade: {grade}")
         time.sleep(1)
         
         grade_element = self.wait.until(
@@ -101,7 +101,7 @@ class ClassReportPage(BaseMobilePage):
 
         grade_element.click()
 
-        print(f"✅ Selected: {grade}")
+        print(f"Selected: {grade}")
         #self.click(self.GRADE_DROPDOWN)
 
         time.sleep(2)
@@ -121,11 +121,11 @@ class ClassReportPage(BaseMobilePage):
 
                 time.sleep(1)
 
-        print("✅ All grades selected")
+        print("All grades selected")
 
         self.click(self.CLASS_REPORT_TAB)
 
-        print("↩️ Returned back after selecting all grades")
+        print("Returned back after selecting all grades")
 
     # ================= TOGGLES =================
 
@@ -137,13 +137,13 @@ class ClassReportPage(BaseMobilePage):
 
             toggles[1].click()
 
-            print("✅ Total/Monthly toggled")
+            print("Total/Monthly toggled")
 
         time.sleep(2)
 
     def enable_test_report(self):
 
-        print("🔄 Switching to Test Report")
+        print("Switching to Test Report")
 
         toggles = self.driver.find_elements(*self.REPORT_TOGGLE)
 
@@ -157,11 +157,11 @@ class ClassReportPage(BaseMobilePage):
 
                 toggle.click()
 
-                print("✅ Switched to Test Report")
+                print("Switched to Test Report")
 
             else:
 
-                print("✅ Already in Test Report")
+                print("Already in Test Report")
 
         time.sleep(2)
 
@@ -214,7 +214,7 @@ class ClassReportPage(BaseMobilePage):
 
                 if not options:
 
-                    print("❌ No assessment options found")
+                    print("No assessment options found")
                     return
 
                 found_new = False
@@ -231,7 +231,7 @@ class ClassReportPage(BaseMobilePage):
                         if name in selected:
                             continue
 
-                        print(f"➡️ Selecting: {name}")
+                        print(f"Selecting: {name}")
 
                         option.click()
 
@@ -239,7 +239,7 @@ class ClassReportPage(BaseMobilePage):
 
                         selected.add(name)
 
-                        print(f"✔️ Selected: {selected}")
+                        print(f"Selected: {selected}")
 
                         found_new = True
 
@@ -247,18 +247,18 @@ class ClassReportPage(BaseMobilePage):
 
                     except Exception as inner_error:
 
-                        print(f"❌ Error processing option: {inner_error}")
+                        print(f"Error processing option: {inner_error}")
 
                 if not found_new:
 
-                    print("✅ All assessments processed")
+                    print("All assessments processed")
                     return
 
                 retry_count += 1
 
             except Exception as e:
 
-                print(f"❌ Dropdown failure: {e}")
+                print(f"Dropdown failure: {e}")
 
                 retry_count += 1
                 
@@ -292,7 +292,7 @@ class ClassReportPage(BaseMobilePage):
 
         for index, grade in enumerate(grades):
 
-            print(f"\n📘 Processing Grade: {grade}")
+            print(f"\nProcessing Grade: {grade}")
 
             try:
 
@@ -317,7 +317,7 @@ class ClassReportPage(BaseMobilePage):
                 # select all assessments
                 self.select_all_assessments()
 
-                print(f"✅ Completed assessments for {grade}")
+                print(f"Completed assessments for {grade}")
 
                 # reopen dropdown except for last grade
                 if index != len(grades) - 1:
@@ -328,11 +328,11 @@ class ClassReportPage(BaseMobilePage):
 
                 else:
 
-                    print("✅ All grades completed")
+                    print("All grades completed")
 
             except Exception as e:
 
-                print(f"❌ Assessment issue for {grade}: {e}")
+                print(f"Assessment issue for {grade}: {e}")
 
     # ================= FULL FLOW =================
 
