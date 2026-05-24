@@ -23,6 +23,6 @@ class TestLessonPlan:
             config["testdata"]["phone"]
         )
 
-        assert home.is_logged_in(), "❌ Login failed"
+        assert home.is_logged_in(), "Login failed"
 
         page.run_grade_selection_flow()

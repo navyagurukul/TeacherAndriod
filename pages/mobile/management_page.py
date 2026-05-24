@@ -323,7 +323,7 @@ class StudentManagementPage(BaseMobilePage):
 
                     self.driver.tap([(x, y)])
 
-                print("✅ Submit & Review clicked")
+                print("Submit & Review clicked")
 
                 return
 
@@ -331,7 +331,7 @@ class StudentManagementPage(BaseMobilePage):
 
                 self.scroll_down()
 
-        raise Exception("❌ Submit & Review button not found")
+        raise Exception("Submit & Review button not found")
 
     def click_confirm(self):
 

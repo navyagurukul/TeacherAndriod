@@ -35,7 +35,7 @@ class LessonPlanPage(BaseMobilePage):
         self.wait.until(
             EC.element_to_be_clickable(self.LESSON_PLAN_TAB)
         ).click()
-        print("✅ Lesson Plan opened")
+        print("Lesson Plan opened")
 
     def get_grades(self):
         # open dropdown
@@ -53,11 +53,11 @@ class LessonPlanPage(BaseMobilePage):
             if text and text.lower().startswith("grade"):
                 grades.append(text)
 
-        print("📚 Grades found:", grades)
+        print("Grades found:", grades)
         return grades
 
     def select_grade(self, grade):
-        print(f"➡️ Selecting grade: {grade}")
+        print(f"Selecting grade: {grade}")
 
         # reopen dropdown every time
         self.wait.until(
@@ -72,7 +72,7 @@ class LessonPlanPage(BaseMobilePage):
         )
         option.click()
 
-        print(f"✅ Selected: {grade}")
+        print(f"Selected: {grade}")
         time.sleep(2)
 
     # ================= FLOW =================
@@ -86,4 +86,4 @@ class LessonPlanPage(BaseMobilePage):
             try:
                 self.select_grade(grade)
             except Exception as e:
-                print(f"❌ Failed selecting {grade}: {str(e)[:80]}")
+                print(f"Failed selecting {grade}: {str(e)[:80]}")

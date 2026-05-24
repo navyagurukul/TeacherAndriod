@@ -67,13 +67,13 @@ class StudentReportPage(BaseMobilePage):
 
         grades = list(dict.fromkeys(grades))
 
-        print(f"📚 Grades found: {grades}")
+        print(f"Grades found: {grades}")
 
         return grades
 
     def select_grade(self, grade):
 
-        print(f"➡️ Selecting grade: {grade}")
+        print(f"Selecting grade: {grade}")
         time.sleep(1)
         
         grade_element = self.wait.until(
@@ -85,7 +85,7 @@ class StudentReportPage(BaseMobilePage):
 
         grade_element.click()
 
-        print(f"✅ Selected: {grade}")
+        print(f"Selected: {grade}")
         #self.click(self.GRADE_DROPDOWN)
 
         time.sleep(2)
@@ -105,16 +105,16 @@ class StudentReportPage(BaseMobilePage):
 
                 time.sleep(1)
 
-        print("✅ All grades selected")
+        print("All grades selected")
 
         self.click(self.STUDENT_REPORT_TAB)
 
-        print("↩️ Returned back after selecting all grades")
+        print("Returned back after selecting all grades")
 
     # ================= TOGGLES =================
     def enable_Assessment_Result(self):
 
-        print("🔄 Switching to Assessment Result")
+        print("Switching to Assessment Result")
 
         toggles = self.driver.find_elements(*self.REPORT_TOGGLE)
 
@@ -128,11 +128,11 @@ class StudentReportPage(BaseMobilePage):
 
                 toggle.click()
 
-                print("✅ Switched to Assessment Result")
+                print("Switched to Assessment Result")
 
             else:
 
-                print("✅ Already in Assessment Result")
+                print("Already in Assessment Result")
 
         time.sleep(2)
 

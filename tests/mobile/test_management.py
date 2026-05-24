@@ -11,7 +11,7 @@ class TestManagement:
     @pytest.mark.android
     def test_management_page(self, driver, config):
 
-        print("🚀 Test Started")
+        print("Test Started")
 
         login = LoginPage(driver)
         management = StudentManagementPage(driver)
