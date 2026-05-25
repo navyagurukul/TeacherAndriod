@@ -55,8 +55,6 @@ class HomePage(BaseMobilePage):
     def logout(self):
         print("Home Logout")
         
-        
-
         self.open_menu()
 
         self.wait.until(

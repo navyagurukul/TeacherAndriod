@@ -73,8 +73,9 @@ class LoginPage(BaseMobilePage):
 
         self.open_menu()
 
-        self.wait.until(
+        logout = self.wait.until(
             EC.element_to_be_clickable(self.LOGOUT_BTN)
-        ).click()
+        )
+        logout.click()
 
         print("Logout done")

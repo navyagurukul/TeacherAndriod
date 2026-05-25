@@ -211,6 +211,8 @@ class ClassReportPage(BaseMobilePage):
             return "in_progress"
         if "completed" in source:
             return "completed"
+        if "closed" in source:
+            return "closed"
 
         return "open"
 
