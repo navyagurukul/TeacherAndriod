@@ -240,8 +240,41 @@ class StudentManagementPage(BaseMobilePage):
 
         print("Selecting available grade...")
 
-        # OPEN DROPDOWN
-        self.click(self.GRADE_DROPDOWN)
+        # Bring the Grade field into view; the gender popup that just closed
+        # may have shifted the form or pushed Grade below the fold.
+        try:
+            self.driver.find_element(
+                AppiumBy.ANDROID_UIAUTOMATOR,
+                'new UiScrollable(new UiSelector().scrollable(true))'
+                '.scrollIntoView(new UiSelector().descriptionContains("Grade"))'
+            )
+        except Exception:
+            pass
+
+        # OPEN DROPDOWN — retry to absorb a render lag right after gender select
+        last_err = None
+        for attempt in range(3):
+            try:
+                self.click(self.GRADE_DROPDOWN)
+                break
+            except Exception as e:
+                last_err = e
+                # Fallback: tap the Grade ViewGroup itself (no ImageView child).
+                try:
+                    fallback = (
+                        AppiumBy.XPATH,
+                        '//android.view.ViewGroup[@content-desc="Grade"]'
+                    )
+                    WebDriverWait(self.driver, 5).until(
+                        EC.element_to_be_clickable(fallback)
+                    ).click()
+                    last_err = None
+                    break
+                except Exception as e2:
+                    last_err = e2
+                    time.sleep(1)
+        if last_err:
+            raise last_err
 
         time.sleep(1)
 
@@ -256,8 +289,9 @@ class StudentManagementPage(BaseMobilePage):
         if not options:
             raise Exception("No grade options found")
 
-        # SELECT FIRST AVAILABLE GRADE
-        option = options[3]
+        # SELECT FIRST AVAILABLE GRADE — index 3 in original, fall back to last
+        # available if fewer than 4 options are present.
+        option = options[3] if len(options) > 3 else options[-1]
 
         print(f"Selected: {option.text}")
 
