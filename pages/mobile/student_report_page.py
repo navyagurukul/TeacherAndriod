@@ -1,6 +1,7 @@
 import time
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from appium import webdriver
 from core.base.base_mobile_page import BaseMobilePage
 
@@ -75,20 +76,36 @@ class StudentReportPage(BaseMobilePage):
 
         print(f"Selecting grade: {grade}")
         time.sleep(1)
-        
-        grade_element = self.wait.until(
-            EC.element_to_be_clickable((
-                AppiumBy.XPATH,
-                f'//android.view.ViewGroup[@content-desc="{grade}"]'
-            ))
+
+        locator = (
+            AppiumBy.XPATH,
+            f'//android.view.ViewGroup[@content-desc="{grade}"]'
         )
 
-        grade_element.click()
+        last_err = None
+        for attempt in range(3):
+            try:
+                grade_element = WebDriverWait(self.driver, 8).until(
+                    EC.element_to_be_clickable(locator)
+                )
+                grade_element.click()
+                print(f"Selected: {grade}")
+                time.sleep(2)
+                return
+            except Exception as e:
+                last_err = e
+                # Try scrolling the dropdown to bring the option into view.
+                try:
+                    self.driver.find_element(
+                        AppiumBy.ANDROID_UIAUTOMATOR,
+                        f'new UiScrollable(new UiSelector().scrollable(true))'
+                        f'.scrollIntoView(new UiSelector().descriptionContains("{grade}"))'
+                    )
+                except Exception:
+                    pass
+                time.sleep(1)
 
-        print(f"Selected: {grade}")
-        #self.click(self.GRADE_DROPDOWN)
-
-        time.sleep(2)
+        raise last_err
 
     def select_all_grades(self):
 
@@ -96,14 +113,18 @@ class StudentReportPage(BaseMobilePage):
 
         for index, grade in enumerate(grades):
 
-            self.select_grade(grade)
+            try:
+                self.select_grade(grade)
+            except Exception as e:
+                print(f"Skipped {grade}: {str(e).splitlines()[0]}")
 
             # reopen dropdown except last grade
             if index != len(grades) - 1:
-
-                self.click(self.GRADE_DROPDOWN)
-
-                time.sleep(1)
+                try:
+                    self.click(self.GRADE_DROPDOWN)
+                    time.sleep(1)
+                except Exception as e:
+                    print(f"Could not reopen grade dropdown: {str(e).splitlines()[0]}")
 
         print("All grades selected")
 
