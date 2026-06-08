@@ -31,7 +31,7 @@ jobs:
 
       # ================= CHECKOUT =================
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ================= PYTHON =================
       - name: Verify Python
@@ -46,7 +46,7 @@ jobs:
           pip install -r requirements.txt
       # ================= NODE =================
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
 
       - name: Verify Node
         shell: powershell
@@ -134,14 +134,14 @@ jobs:
           allure generate allure-results --clean -o allure-report
       # ================= REPORTS =================
       - name: Upload Allure Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: smoke-allure-report
           path: allure-report    
 
       - name: Upload Failure Screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: smoke-failure-screenshots
           path: screenshots/
@@ -164,7 +164,7 @@ jobs:
 
       # ================= CHECKOUT =================
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ================= PYTHON =================
       - name: Verify Python
@@ -179,7 +179,7 @@ jobs:
           pip install -r requirements.txt
       # ================= NODE =================
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
 
       - name: Verify Node
         shell: powershell
@@ -267,14 +267,14 @@ jobs:
           allure generate allure-results --clean -o allure-report
       # ================= REPORTS =================
       - name: Upload Allure Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: regression-allure-report
           path: allure-report
 
       - name: Upload Failure Screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: regression-failure-screenshots
           path: screenshots/
