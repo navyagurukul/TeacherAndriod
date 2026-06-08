@@ -64,11 +64,20 @@ class LessonPlanPage(BaseMobilePage):
         last_err = None
         for attempt in range(3):
             try:
-                triggers = self.driver.find_elements(*self.GRADE_DROPDOWN)
-                if triggers:
-                    # Take the LAST match — the dropdown trigger sits below
-                    # any previously selected grade text shown in the page.
-                    triggers[-1].click()
+                # Option may already be visible if a previous attempt left
+                # the dropdown open — try clicking it directly first.
+                options = self.driver.find_elements(*option_locator)
+                if options:
+                    options[0].click()
+                    print(f"Selected: {grade}")
+                    time.sleep(2)
+                    return
+
+                # Otherwise open the dropdown (first clickable trigger match)
+                # and then click the option.
+                WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable(self.GRADE_DROPDOWN)
+                ).click()
                 time.sleep(1)
 
                 option = WebDriverWait(self.driver, 5).until(
