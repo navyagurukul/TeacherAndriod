@@ -195,11 +195,21 @@ class ClassReportPage(BaseMobilePage):
 
                 if not found_new:
                     print("All assessments processed")
+                    self._close_open_dropdown()
                     return
 
             except Exception as e:
                 print(f"Retrying due to: {e}")
                 time.sleep(2)
+
+        self._close_open_dropdown()
+
+    def _close_open_dropdown(self):
+        try:
+            self.driver.back()
+            time.sleep(1)
+        except Exception:
+            pass
 
     def get_assessment_state(self):
 
@@ -211,10 +221,7 @@ class ClassReportPage(BaseMobilePage):
             return "in_progress"
         if "completed" in source:
             return "completed"
-        if "closed" in source:
-            return "closed"
-
-        return "open"
+        return "closed" if "closed" in source else "open"
 
     # ================= FULL FLOW =================
 
@@ -227,6 +234,10 @@ class ClassReportPage(BaseMobilePage):
             print(f"\nProcessing Grade: {grade}")
 
             try:
+                if i != 0:
+                    self.wait_clickable(self.GRADE_DROPDOWN).click()
+                    time.sleep(1)
+
                 self.select_grade(grade)
 
                 self.wait_present(self.ASSESSMENT_DROPDOWN)
@@ -236,14 +247,11 @@ class ClassReportPage(BaseMobilePage):
 
                 print(f"Completed assessments for {grade}")
 
-                if i != len(grades) - 1:
-                    self.wait_clickable(self.GRADE_DROPDOWN).click()
-                    time.sleep(1)
-                else:
-                    print("All grades completed")
-
             except Exception as e:
-                print(f"Assessment issue for {grade}: {e}")
+                print(f"Assessment issue for {grade}: {str(e).splitlines()[0]}")
+                self._close_open_dropdown()
+
+        print("All grades completed")
 
     # ================= MAIN FLOW =================
 

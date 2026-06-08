@@ -59,21 +59,31 @@ class LessonPlanPage(BaseMobilePage):
     def select_grade(self, grade):
         print(f"Selecting grade: {grade}")
 
-        # reopen dropdown every time
-        self.wait.until(
-            EC.element_to_be_clickable(self.GRADE_DROPDOWN)
-        ).click()
-        time.sleep(1)
+        option_locator = (AppiumBy.XPATH, f"//*[@text='{grade}']")
 
-        option = self.wait.until(
-            EC.element_to_be_clickable(
-                (AppiumBy.XPATH, f"//*[@text='{grade}']")
-            )
-        )
-        option.click()
+        last_err = None
+        for attempt in range(3):
+            try:
+                triggers = self.driver.find_elements(*self.GRADE_DROPDOWN)
+                if triggers:
+                    # Take the LAST match — the dropdown trigger sits below
+                    # any previously selected grade text shown in the page.
+                    triggers[-1].click()
+                time.sleep(1)
 
-        print(f"Selected: {grade}")
-        time.sleep(2)
+                option = WebDriverWait(self.driver, 5).until(
+                    EC.element_to_be_clickable(option_locator)
+                )
+                option.click()
+
+                print(f"Selected: {grade}")
+                time.sleep(2)
+                return
+            except Exception as e:
+                last_err = e
+                time.sleep(1)
+
+        raise last_err
 
     # ================= FLOW =================
 

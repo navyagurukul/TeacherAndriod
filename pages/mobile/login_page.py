@@ -1,5 +1,6 @@
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from appium import webdriver
 from core.base.base_mobile_page import BaseMobilePage
 import time
@@ -19,7 +20,12 @@ class LoginPage(BaseMobilePage):
     HOME_TEXT = (AppiumBy.XPATH, "//android.widget.TextView[contains(@text,'Home')]")
 
     #  BEST MENU LOCATOR (NO Unicode, NO WhatsApp issue)
-    MENU_BTN = (AppiumBy.XPATH, "//android.widget.ImageButton[@clickable='true']")
+    MENU_BTN = (
+        AppiumBy.XPATH,
+        "//android.widget.ImageButton[@clickable='true']"
+        " | //android.widget.ImageView[@clickable='true' and contains(@content-desc,'enu')]"
+        " | //*[@content-desc='Menu' or @content-desc='menu' or @content-desc='Open menu']"
+    )
 
     LOGOUT_BTN = (AppiumBy.XPATH, "//android.widget.TextView[@text='Logout']")
 
@@ -52,19 +58,18 @@ class LoginPage(BaseMobilePage):
         time.sleep(0.5)
 
         try:
-            menu = self.wait.until(
+            menu = WebDriverWait(self.driver, 3).until(
                 EC.element_to_be_clickable(self.MENU_BTN)
             )
             menu.click()
             print("Menu clicked")
-        except Exception as e:
-            print("Fallback tap used:", e)
-
+        except Exception:
             size = self.driver.get_window_size()
             x = int(size['width'] * 0.92)
             y = int(size['height'] * 0.08)
 
             self.driver.tap([(x, y)])
+            print("Menu tapped via coordinates")
 
     # ===== LOGOUT =====
 
